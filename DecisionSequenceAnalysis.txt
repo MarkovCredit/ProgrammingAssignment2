@@ -1,0 +1,66 @@
+
+declare @decseq table
+(decseqitem int
+--,app_rec_date date
+,value varchar(55), appid int)
+
+insert into @decseq
+
+SELECT 
+ row_number() over (partition by [bundle_id] order by dhi.create_date  asc) 'Decseqitem'
+ --,dhi.create_date 'app_rec_date'
+ ,dhi.value
+ ,[bundle_id] 'appid'
+--[LoanApplication_Id]
+  
+   --   ,[deal_type]
+   --   ,[request_date]
+   --   ,[payment_call]
+   --   ,[source_system]
+   --   ,[version]
+   --   ,[deal_detail_id]
+   --   ,[app_status]
+   --   ,[perform_dupe_check]
+   --   --,la.[create_date]
+   --   --,la.[update_date]
+   --   --,la.[updated_by]
+   --   ,[decisioned_by]
+   
+   --   ,[status_last_changed_on]
+   --   ,[LoanApplications_Id]
+   --   ,[source_system_id]
+   --   ,[source_dealer_id]
+   --   ,la.[load_id]
+	  --,dhi.DecisionHistoryItems_Id
+	  --,dhi.dataelementid
+	    --,dhi.create_date
+		
+  FROM [defi].dbo.[LoanApplication] la
+  left join defi.dbo.DecisionHistoryItem dhi on la.load_id = dhi.load_id 
+  where dataelementid = 432
+  and cast(dhi.create_date as date) >= '2016-01-01'
+  and deal_type = 'requested'
+  --and bundle_id in( 636539,629416)
+ 
+  --order by bundle_id
+select p.*
+
+from
+(
+SELECT 
+dsh.appid 'Appid'
+--,dsh.app_rec_date 'AppRecDate'
+,dsh.decseqitem 'DecSeqItem'
+,dsh.value 'Value'
+  from
+  @decseq dsh
+  ) as j 
+  PIVOT
+  (max([value]) for DecSeqItem in ([1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[11],[12],[13],[14],[15],[16],[17],
+  [18],[19],[20],[21],[22],[23],[24],[25],[26],[27],[28],[29],[30],[31],[32],[33],[34],[35],[36],[37],[38],[39],[40],
+  [41],[42],[43],[44],[45],[46],[47],[48],[49],[50],[51],[52],[53])
+  ) as p
+  
+ 
+
+
