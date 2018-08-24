@@ -1,0 +1,103 @@
+ 
+ select  a.accNum, 
+       a.program,
+       a.purchaseDate,
+       a.bucket as begin_bucket,
+       b.bucket as end_bucket,
+       b.current_bal,
+       a.term,
+       a.state
+ from 
+ 
+ (
+                     --*********************************current Month***********************************----
+select 
+c.DEALER + c.account as AccNum,
+PROGCLASS as Program,
+PURCHASEDT as PurchaseDate,
+CASE WHEN CIG_Service.dbo.DateDiff360(agethru,getdate(),1) < 6 and c.STATUS not in ('p','c') then 'Current'
+     WHEN CIG_Service.dbo.DateDiff360(agethru,getdate(),1) between 6 and 30 and c.STATUS not in ('p','c') then '6-30 Days'
+     WHEN CIG_Service.dbo.DateDiff360(agethru,getdate(),1) between 31 and 60 and c.STATUS not in ('p','c') then '31-60 Days'
+     WHEN CIG_Service.dbo.DateDiff360(agethru,getdate(),1) between 61 and 90 and c.STATUS not in ('p','c') then '61-90 Days'
+     WHEN CIG_Service.dbo.DateDiff360(agethru,getdate(),1) > 90 and c.STATUS not in ('p','c') then '90+ Days'
+     else null end as Bucket,     
+c.TERM,
+c.REGION,
+d.DEALSTATE as State,
+AGETHRU as Next_Due_date,
+case when cd.V_ADJBOOK = 0 then null else c.CONTRTAMT/cd.V_ADJBOOK  end as LTV,
+cd.V_MILEAGE,
+c.BTRW as Fico,
+c.APR,
+c.PMT_AMT,
+cig_dbase.dbo.GetCurrentBalance(c.dealer, c.account) as Current_bal,
+Case when 
+    (case 
+     when cd.CGROSS is null then  cd.BGROSS + cd.BOTHERINC + cd.COTHERINC
+     Else cd.BGROSS + cd.CGROSS + cd.BOTHERINC + cd.COTHERINC    
+     End) = '0' then null else 
+     (c.PMT_AMT/case 
+     when cd.CGROSS is null then  cd.BGROSS + cd.BOTHERINC + cd.COTHERINC
+     Else cd.BGROSS + cd.CGROSS + cd.BOTHERINC + cd.COTHERINC    
+     End) End as  PTI
+
+from CIG_DBASE.dbo.CONTRACT c 
+     Inner Join dbo.CONTDATA cd on c.DEALER = cd.DEALER and c.ACCOUNT = cd.ACCOUNT  
+     Inner Join dbo.DEALER d on c.DEALER = d.DEALER
+    
+where STATUS in ('A','I') and
+      cig_dbase.dbo.GetCurrentBalance(c.dealer, c.account) > 5 
+  --   c.DEALER not in ('001','005','009','0BE','0B6','0B8','0bc','0AZ','0b0','0b1','0b2','0bd')
+     )
+     a
+     
+ left outer join 
+      
+                      --**************************Previous Month****************************----
+
+(
+
+select 
+c.DEALER + c.account as AccNum,
+PROGCLASS as Program,
+PURCHASEDT as PurchaseDate,
+CASE WHEN CIG_Service.dbo.DateDiff360(agethru,'2013-03-31',0) < 6 and c.STATUS not in ('p','c') then 'Current'
+     WHEN CIG_Service.dbo.DateDiff360(agethru,'2013-03-31',0) between 6 and 30 and c.STATUS not in ('p','c') then '6-30 Days'
+     WHEN CIG_Service.dbo.DateDiff360(agethru,'2013-03-31',0) between 31 and 60 and c.STATUS not in ('p','c') then '31-60 Days'
+     WHEN CIG_Service.dbo.DateDiff360(agethru,'2013-03-31',0) between 61 and 90 and c.STATUS not in ('p','c') then '61-90 Days'
+     WHEN CIG_Service.dbo.DateDiff360(agethru,'2013-03-31',0) > 90 and c.STATUS not in ('p','c') then '90+ Days'
+     else null end as Bucket,     
+c.TERM,
+c.REGION,
+d.DEALSTATE as State,
+AGETHRU as Next_Due_date,
+case when cd.V_ADJBOOK = 0 then null else c.CONTRTAMT/cd.V_ADJBOOK  end as LTV,
+cd.V_MILEAGE,
+c.BTRW as Fico,
+c.APR,
+c.PMT_AMT,
+cig_dbase.dbo.GetCurrentBalance(c.dealer, c.account) as Current_bal,
+Case when 
+    (case 
+     when cd.CGROSS is null then  cd.BGROSS + cd.BOTHERINC + cd.COTHERINC
+     Else cd.BGROSS + cd.CGROSS + cd.BOTHERINC + cd.COTHERINC    
+     End) = '0' then null else 
+     (c.PMT_AMT/case 
+     when cd.CGROSS is null then  cd.BGROSS + cd.BOTHERINC + cd.COTHERINC
+     Else cd.BGROSS + cd.CGROSS + cd.BOTHERINC + cd.COTHERINC    
+     End) End as  PTI
+
+from CIG_DBASE_EOM.dbo.CONTRACT c 
+     Inner Join CIG_DBASE_EOM.dbo.CONTDATA cd on c.DEALER = cd.DEALER and c.ACCOUNT = cd.ACCOUNT  
+     Inner Join CIG_DBASE_EOM.dbo.DEALER d on c.DEALER = d.DEALER
+    
+where STATUS in ('A','I') and
+     cig_dbase.dbo.GetCurrentBalance(c.dealer, c.account) > 5  
+  --   c.DEALER not in ('001','005','009','0BE','0B6','0B8','0bc','0AZ','0b0','0b1','0b2','0bd')
+
+) b
+
+on a.AccNum= b.AccNum
+
+
+-- select AGETHRU,GETDATE(),CIG_Service.dbo.DateDiff360(agethru,'2013-03-31',0),CIG_Service.dbo.DateDiff360(agethru,getdate(),1) from CIG_DBASE_EOM.dbo.CONTRACT
