@@ -1,1 +1,0 @@
-SELECT cast(DATEPART(QUARTER, getdate()) as nvarchar) +  '-' + cast(datepart(year, getdate()) as nvarchar)
